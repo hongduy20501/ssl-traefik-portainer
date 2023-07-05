@@ -1,0 +1,42 @@
+version: "3.2"
+
+services:
+  agent:
+    image: portainer/agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefik_public
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+  portainer:
+    image: portainer/portainer
+    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    ports:
+      - 9000:9000
+    volumes:
+      - data:/data
+    networks:
+      - traefik_public
+    deploy:
+      labels:
+        - traefik.enable=true
+        # change the host here
+        - traefik.http.routers.portainer.rule=Host(`portainer.hongduydevops.id.vn`)
+        - traefik.http.services.portainer.loadbalancer.server.port=9000
+        - traefik.http.routers.portainer.entrypoints=websecure
+        - traefik.http.routers.portainer.tls
+        - traefik.http.routers.portainer.tls.certresolver=myresolver
+      mode: replicated
+      placement:
+        constraints:
+          - node.role == manager
+networks:
+  traefik_public:
+    external: true
+volumes:
+  data:
+  

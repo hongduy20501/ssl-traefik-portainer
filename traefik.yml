@@ -1,0 +1,44 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: traefik
+    command:
+      - --log.level=INFO
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.swarmmode=true
+      - --providers.docker.network=traefik_public
+      - --api
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --accesslog
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.api.http.redirections.entryPoint.to=websecure
+      - --certificatesresolvers.myresolver.acme.tlschallenge=true
+      - --certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.myresolver.acme.email=duy.le@elofun.com
+      - --certificatesresolvers.myresolver.acme.storage=acme.json
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      - public
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/ubuntu/letsencrypt:/letsencrypt
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.traefik.rule=Host(`traefik.hongduydevops.id.vn`)
+        - traefik.http.routers.traefik.service=api@internal
+        - traefik.http.services.traefik.loadbalancer.server.port=8080
+        - traefik.http.routers.traefik.entrypoints=websecure
+        - traefik.http.routers.traefik.tls
+        - traefik.http.routers.traefik.tls.certresolver=myresolver
+networks:
+  public:
+    attachable: true
+    
